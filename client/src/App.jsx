@@ -5,7 +5,7 @@ import './App.css';
 function App() {
   return (
     <div className="App">
-      <h1>Smart Shopping Assistant</h1>
+
       <ChatBox />
     </div>
   );

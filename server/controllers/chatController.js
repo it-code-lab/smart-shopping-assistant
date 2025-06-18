@@ -1,41 +1,80 @@
-// // Placeholder logic: returns static products
+const OpenAI = require("openai");
+require("dotenv").config();
+const Product = require("../models/Product");
 
-// exports.handleChat = (req, res) => {
-//   const query = req.body.query.toLowerCase();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-//   const products = [
-//     {
-//       id: '1',
-//       name: 'Samsung Galaxy A14',
-//       price: 199,
-//       online: true,
-//       store: { name: 'Walmart Ottawa', distance: 2.5 }
-//     },
-//     {
-//       id: '2',
-//       name: 'HP Pavilion Laptop',
-//       price: 499,
-//       online: false,
-//       store: { name: 'Walmart Kanata', distance: 5.2 }
-//     }
-//   ];
 
-//   const results = products.filter(p => p.name.toLowerCase().includes(query));
-//   res.json({ products: results });
-// };
+const generatePrompt = (query) => {
+  return `
+You are an AI assistant that helps users find products. 
+Extract useful details from the user's query and return them as JSON.
+Available categories: ["phone", "laptop", "camera", "earbuds"]
 
-const Product = require('../models/Product');
+User Query: "${query}"
+
+Return format:
+{
+  "category": "string",
+  "price_max": number (optional),
+  "features": [string] (optional),
+  "use_case": "string" (optional),
+  "online_only": boolean (optional)
+}
+`;
+};
 
 exports.handleChat = async (req, res) => {
-  const query = req.body.query.toLowerCase();
+  const query = req.body.query;
+  if (!query) return res.status(400).json({ error: "Query is required." });
+
 
   try {
-    const results = await Product.find({
-      name: { $regex: query, $options: 'i' }
-    }).limit(10);
 
-    res.json({ products: results });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: generatePrompt(query) }],
+    });
+
+    // 👇 Log token usage
+    const usage = completion.usage;
+    if (usage) {
+      console.log(`🔢 Tokens used - prompt: ${usage.prompt_tokens}, completion: ${usage.completion_tokens}, total: ${usage.total_tokens}`);
+      const cost = (usage.prompt_tokens * 0.0015 + usage.completion_tokens * 0.002) / 1000;
+      console.log(`💵 Estimated cost for this request: $${cost.toFixed(6)}`);
+    }
+    const rawResponse = completion.choices[0].message.content;
+    console.log("🔍 GPT raw response:", rawResponse);
+
+    let extracted;
+    try {
+      extracted = JSON.parse(rawResponse);
+    } catch (parseErr) {
+      console.error("❌ JSON parse error:", parseErr.message);
+      return res.status(500).json({ error: "AI response could not be parsed." });
+    }
+
+    const supportedCategories = ['phone', 'laptop', 'camera', 'earbuds', 'tablet', 'printer'];
+    if (!supportedCategories.includes(extracted.category?.toLowerCase())) {
+      return res.status(400).json({ error: "Unsupported product category." });
+    }
+
+    const mongoQuery = {
+      name: { $regex: extracted.category, $options: "i" },
+    };
+    if (extracted.price_max) {
+      mongoQuery.price = { $lte: extracted.price_max };
+    }
+
+    const products = await Product.find(mongoQuery).limit(10);
+    res.json({ products, extracted });
+
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching products' });
+    console.error("❌ GPT or DB error:", err.message);
+    res.status(500).json({ error: "Failed to process query." });
   }
+
 };
+

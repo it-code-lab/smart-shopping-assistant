@@ -1,1 +1,24 @@
 *.env
+
+# Node.js
+node_modules/
+npm-debug.log*
+.env
+
+# Vite / React
+client/dist/
+client/.vite/
+client/.eslintcache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code settings (optional)
+.vscode/
+
+# Logs
+*.log
+
+# Coverage
+coverage/
