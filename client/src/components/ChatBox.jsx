@@ -66,67 +66,45 @@ const ChatBox = () => {
   return (
     <div className="chat-container">
       <h1>Smart Shopping Assistant</h1>
-      <div style={{ width: '100%', maxWidth: 700, position: 'relative' }}>
+
+      <div className="textarea-wrapper">
         <textarea
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search by voice or text..."
-          rows={3}
-          style={{
-            width: '80%',
-            padding: '10px',
-            borderRadius: '5px',
-            fontSize: '1rem',
-            resize: 'vertical',
-            margin: 'auto',
-            marginBottom: '20px',
-          }}
+          rows={4}
         />
         <button
-          type="button"
+          className={`mic-button ${listening ? 'listening' : ''}`}
           onClick={handleVoiceInput}
-          title="Speak"
-          style={{
-            position: 'absolute',
-            right: 40,
-            top: 0,
-            backgroundColor: listening ? '#dc3545' : '#007bff',
-            border: 'none',
-            width: 40,
-            height: 40,
-            padding: 0,
-            color: '#fff',
-            fontWeight: 'bold',
-            fontSize: '1.1rem',
-            cursor: 'pointer',
-            boxShadow: '0 0 8px rgba(0,0,0,0.2)'
-          }}
+          title="Click to speak"
         >
-          🎤
+          <span style={{ fontSize: '1.3rem', display: 'block' }}>🎙️</span>
         </button>
       </div>
-      <button onClick={handleSearch}>Search</button>
+
+      <button className="submit-button" onClick={handleSearch}>Search</button>
 
       {errorMsg && <p style={{ color: 'red', marginTop: '10px' }}>{errorMsg}</p>}
 
       {extracted && (
-        <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f0f0f0' }}>
+        <div className="query-details">
           <strong>Query Details:</strong>
           <ul>
             <li><b>Category:</b> {extracted.category}</li>
             {extracted.price_max && <li><b>Max Price:</b> ${extracted.price_max}</li>}
-            {extracted.features && extracted.features.length > 0 && (
+            {extracted.features?.length > 0 && (
               <li><b>Features:</b> {extracted.features.join(', ')}</li>
             )}
             {extracted.use_case && <li><b>Use Case:</b> {extracted.use_case}</li>}
-            {typeof extracted.online_only === 'boolean' && (
+            {'online_only' in extracted && (
               <li><b>Online Only:</b> {extracted.online_only ? 'Yes' : 'No'}</li>
             )}
           </ul>
         </div>
       )}
 
-      <div className="results" style={{ marginTop: '20px' }}>
+      <div className="results">
         {results.length > 0 ? (
           results.map((p, idx) => (
             <ProductCard
@@ -143,7 +121,6 @@ const ChatBox = () => {
           !errorMsg && extracted && <p>No matching products found.</p>
         )}
       </div>
-
     </div>
   );
 };
