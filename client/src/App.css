@@ -157,7 +157,7 @@ button:hover {
 
 .mic-button {
   position: absolute;
-  right: 12px;
+  right: -90px;
   top: 12px;
   background-color: darkmagenta;
   border: none;

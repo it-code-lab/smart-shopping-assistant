@@ -61,14 +61,25 @@ exports.handleChat = async (req, res) => {
       return res.status(400).json({ error: "Unsupported product category." });
     }
 
-    const mongoQuery = {
-      name: { $regex: extracted.category, $options: "i" },
-    };
+    const orConditions = [
+      { category: { $regex: extracted.category, $options: "i" } },
+      { name: { $regex: extracted.category, $options: "i" } },
+    ];
+
+    const andConditions = [{ $or: orConditions }];
+
     if (extracted.price_max) {
-      mongoQuery.price = { $lte: extracted.price_max };
+      andConditions.push({ price: { $lte: extracted.price_max } });
     }
 
+    const mongoQuery = { $and: andConditions };
+
+    console.log("🧪 Final Mongo Query:", JSON.stringify(mongoQuery, null, 2));
+
     const products = await Product.find(mongoQuery).limit(10);
+
+    console.log(`📦 Found ${products.length} products`);
+
     res.json({ products, extracted });
 
   } catch (err) {
